@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_google_maps/src/core/map_preferences.dart' as map_preferences;
 
 import 'package:uuid/uuid.dart';
 import 'package:flinq/flinq.dart';
@@ -72,6 +73,16 @@ class GoogleMapState extends GoogleMapStateBase {
   }
 
   @override
+  void changeMapType(map_preferences.MapType mapType, {bool waitUntilReady = true}) {
+    try {      
+      _mapOptions.mapTypeId = mapType.toString().split('.')[1];
+      _map.options = _mapOptions;
+    } catch (e) {
+      throw exception.MapStyleException(e.toString());
+    }
+  }
+
+  @override
   void addMarker(
     GeoCoord position, {
     String label,
@@ -100,7 +111,7 @@ class GoogleMapState extends GoogleMapStateBase {
     final marker = Marker()
       ..map = _map
       ..label = label
-      ..icon = icon != null ? '${fixAssetPath(icon)}assets/$icon' : null
+      ..icon = icon != null ? '$icon' : null
       ..position = position.toLatLng();
 
     if (info != null || onTap != null) {

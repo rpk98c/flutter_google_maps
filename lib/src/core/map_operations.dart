@@ -7,6 +7,8 @@ import 'dart:ui' show Color, VoidCallback;
 import 'package:google_directions_api/google_directions_api.dart'
     show GeoCoord, GeoCoordBounds;
 
+import 'map_preferences.dart';
+
 /// Interface of setting up map operations including:
 ///
 ///  * Markers
@@ -56,6 +58,11 @@ abstract class MapOperations implements MapMarkers, MapDirections, MapPolygons {
   /// new map style will be set to widgets [GoogleMap.mapStyle].
   void changeMapStyle(
     String mapStyle, {
+    bool waitUntilReady = true,
+  });
+
+  void changeMapType(
+    MapType mapType, {
     bool waitUntilReady = true,
   });
 }

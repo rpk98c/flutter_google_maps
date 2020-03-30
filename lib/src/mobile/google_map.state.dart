@@ -13,6 +13,7 @@ import 'package:google_directions_api/google_directions_api.dart';
 import 'utils.dart';
 import '../core/utils.dart' as exception;
 import '../core/google_map.dart' as gmap;
+import 'package:flutter_google_maps/src/core/map_preferences.dart' as map_preferences;
 
 class GoogleMapState extends gmap.GoogleMapStateBase {
   final directionsService = DirectionsService();
@@ -21,10 +22,17 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
   final _polygons = <String, Polygon>{};
   final _polylines = <String, Polyline>{};
   final _directionMarkerCoords = <GeoCoord, dynamic>{};
+  map_preferences.MapType _mapType;
 
   final _waitUntilReadyCompleter = Completer<Null>();
 
   GoogleMapController _controller;
+
+  @override
+  void initState() {
+    _mapType = widget.mapType;
+    super.initState();
+  }
 
   void _setState(VoidCallback fn) {
     if (mounted) {
@@ -88,6 +96,19 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
     } on MapStyleException catch (e) {
       throw exception.MapStyleException(e.cause);
     }
+  }
+
+  @override
+  void changeMapType(
+    map_preferences.MapType mapType, {
+    bool waitUntilReady = true,
+  }) async {
+    if (waitUntilReady == true) {
+      await _waitUntilReadyCompleter.future;
+    }
+    _setState(() {
+      this._mapType = mapType;
+    });
   }
 
   @override
@@ -403,7 +424,7 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
               markers: Set<Marker>.of(_markers.values),
               polygons: Set<Polygon>.of(_polygons.values),
               polylines: Set<Polyline>.of(_polylines.values),
-              mapType: MapType.values[widget.mapType.index],
+              mapType: MapType.values[_mapType.index],
               minMaxZoomPreference:
                   MinMaxZoomPreference(widget.minZoom, widget.minZoom),
               initialCameraPosition: CameraPosition(

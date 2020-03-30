@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_google_maps/src/core/map_preferences.dart';
 
 import 'package:google_directions_api/google_directions_api.dart'
     show GeoCoord, GeoCoordBounds;
@@ -95,4 +96,9 @@ class GoogleMapState extends GoogleMapStateBase {
 
   @override
   Widget build(BuildContext context) => throw UnimplementedError();
+
+  @override
+  void changeMapType(MapType mapType, {bool waitUntilReady = true}) {
+    throw UnimplementedError();
+  }
 }

@@ -48,15 +48,16 @@ class GoogleMapState extends GoogleMapStateBase {
       return true;
     }());
 
-    _map.center = newBounds.center.toLatLng();
+    _map.fitBounds(newBounds.toLatLngBounds());
+    // _map.center = newBounds.center.toLatLng();
 
-    final zoom = _map.zoom;
-    if (animated == true) {
-      _map.panToBounds(newBounds.toLatLngBounds());
-    } else {
-      _map.fitBounds(newBounds.toLatLngBounds());
-    }
-    _map.zoom = zoom;
+    // final zoom = _map.zoom;
+    // if (animated == true) {
+    //   _map.panToBounds(newBounds.toLatLngBounds());
+    // } else {
+    //   _map.fitBounds(newBounds.toLatLngBounds());
+    // }
+    // _map.zoom = 0;
   }
 
   @override

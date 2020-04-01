@@ -87,6 +87,9 @@ abstract class MapMarkers {
   /// if [onInfoWindowTap] is set, it will be called once InfoWindow will be tapped.
   ///
   /// If marker with same [position] have been already added, addition of a new marker will be ignored.
+  /// 
+  /// [height] on mobile platforms the marker will be scaled to this height maintaining aspect ratio. it 
+  /// is currently ignored on web
   void addMarker(
     GeoCoord position, {
     String label,
@@ -95,6 +98,7 @@ abstract class MapMarkers {
     String infoSnippet,
     VoidCallback onTap,
     VoidCallback onInfoWindowTap,
+    int height,
   });
 
   /// Removes a marker from the map by given [position].

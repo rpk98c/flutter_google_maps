@@ -92,6 +92,7 @@ class GoogleMapState extends GoogleMapStateBase {
     String infoSnippet,
     ui.VoidCallback onTap,
     ui.VoidCallback onInfoWindowTap,
+    int height,
   }) {
     assert(() {
       if (position == null) {

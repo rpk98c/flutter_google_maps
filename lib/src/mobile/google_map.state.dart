@@ -3,17 +3,22 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
 
 import 'package:flinq/flinq.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_directions_api/google_directions_api.dart';
 
 import 'utils.dart';
 import '../core/utils.dart' as exception;
 import '../core/google_map.dart' as gmap;
-import 'package:flutter_google_maps/src/core/map_preferences.dart' as map_preferences;
+import 'package:flutter_google_maps/src/core/map_preferences.dart'
+    as map_preferences;
 
 class GoogleMapState extends gmap.GoogleMapStateBase {
   final directionsService = DirectionsService();
@@ -49,6 +54,64 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
       createLocalImageConfiguration(context),
       asset,
     );
+  }
+
+  /// Holds futures of [BitmapDescriptor] for the marker icons keyed by the
+  /// url of the icon.
+  Map<String, Future<BitmapDescriptor>> _markerBitmapsFutures =
+      Map<String, Future<BitmapDescriptor>>();
+
+  /// Creates a [BitmapDescriptor] from an image url, if the download fails then
+  /// The futures are stored in [_markerBitmapsFutures] to prevent
+  /// multiple [BitmapDescriptor] being created using the same image. If
+  /// the [url] is found in [_markerBitmapsFutures] it is returned
+  ///
+  /// When images are donwloaded they are chanced in the default manager,
+  /// this means even if the internet goes down markers will be perserved across
+  /// map instantiations
+  Future<BitmapDescriptor> _getBmpDescFromNetowrk(
+    String url,
+    int height,
+  ) async {
+    if (_markerBitmapsFutures[url] != null) {
+      return _markerBitmapsFutures[url];
+    }
+    Completer<BitmapDescriptor> _completer = Completer();
+
+    File imageAsFile = await DefaultCacheManager().getSingleFile(url);
+    FileImage image = FileImage(imageAsFile);
+
+    await image.obtainKey(ImageConfiguration()).then(
+      (val) {
+        ImageStreamCompleter load = image.load(
+            val,
+            (Uint8List bytes, {int cacheWidth, int cacheHeight}) =>
+                instantiateImageCodec(
+                  bytes,
+                  targetHeight: height,           
+                ));
+        load.addListener(
+          ImageStreamListener(
+            (ImageInfo imageInfo, _) {
+              imageInfo.image.toByteData(format: ImageByteFormat.png).then(
+                (ByteData data) {
+                  _completer.complete(
+                    BitmapDescriptor.fromBytes(data.buffer.asUint8List()),
+                  );
+                },
+              );
+            },
+            onError: (why, stack) {
+              _completer.complete(
+                BitmapDescriptor.defaultMarker,
+              );
+            },
+          ),
+        );
+      },
+    );
+    _markerBitmapsFutures[url] = _completer.future;
+    return _completer.future;
   }
 
   @override
@@ -120,6 +183,7 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
     String infoSnippet,
     VoidCallback onTap,
     VoidCallback onInfoWindowTap,
+    int height,
   }) async {
     assert(() {
       if (position == null) {
@@ -145,7 +209,7 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
       position: position.toLatLng(),
       icon: icon == null
           ? BitmapDescriptor.defaultMarker
-          : await _getBmpDescFromAsset('${fixAssetPath(icon)}$icon'),
+          : await _getBmpDescFromNetowrk(icon, height),
       infoWindow: info != null
           ? InfoWindow(
               title: info,
@@ -206,11 +270,8 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
     }());
 
     final request = DirectionsRequest(
-      origin: origin is GeoCoord
-          ? LatLng(origin.latitude, origin.longitude)
-          : origin,
-      destination:
-          destination is GeoCoord ? destination.toLatLng() : destination,
+      origin: origin,
+      destination: destination,
       travelMode: TravelMode.driving,
     );
     directionsService.route(
@@ -229,42 +290,42 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
           final leg = response?.routes?.firstOrNull?.legs?.firstOrNull;
 
           final startLatLng = leg?.startLocation;
-          if (startLatLng != null) {
-            _directionMarkerCoords[startLatLng] = origin;
-            if (startIcon != null || startInfo != null || startLabel != null) {
-              addMarker(
-                startLatLng,
-                icon: startIcon ?? 'assets/images/marker_a.png',
-                info: startInfo ?? leg.startAddress,
-                label: startLabel,
-              );
-            } else {
-              addMarker(
-                startLatLng,
-                icon: 'assets/images/marker_a.png',
-                info: leg.startAddress,
-              );
-            }
-          }
+          // if (startLatLng != null) {
+          //   _directionMarkerCoords[startLatLng] = origin;
+          //   if (startIcon != null || startInfo != null || startLabel != null) {
+          //     addMarker(
+          //       startLatLng,
+          //       icon: startIcon ?? 'assets/images/marker_a.png',
+          //       info: startInfo ?? leg.startAddress,
+          //       label: startLabel,
+          //     );
+          //   } else {
+          //     addMarker(
+          //       startLatLng,
+          //       icon: 'assets/images/marker_a.png',
+          //       info: leg.startAddress,
+          //     );
+          //   }
+          // }
 
           final endLatLng = leg?.endLocation;
-          if (endLatLng != null) {
-            _directionMarkerCoords[endLatLng] = destination;
-            if (endIcon != null || endInfo != null || endLabel != null) {
-              addMarker(
-                endLatLng,
-                icon: endIcon ?? 'assets/images/marker_b.png',
-                info: endInfo ?? leg.endAddress,
-                label: endLabel,
-              );
-            } else {
-              addMarker(
-                endLatLng,
-                icon: 'assets/images/marker_b.png',
-                info: leg.endAddress,
-              );
-            }
-          }
+          // if (endLatLng != null) {
+          //   _directionMarkerCoords[endLatLng] = destination;
+          //   if (endIcon != null || endInfo != null || endLabel != null) {
+          //     addMarker(
+          //       endLatLng,
+          //       icon: endIcon ?? 'assets/images/marker_b.png',
+          //       info: endInfo ?? leg.endAddress,
+          //       label: endLabel,
+          //     );
+          //   } else {
+          //     addMarker(
+          //       endLatLng,
+          //       icon: 'assets/images/marker_b.png',
+          //       info: leg.endAddress,
+          //     );
+          //   }
+          // }
 
           final polylineId = PolylineId(key);
           final polyline = Polyline(
@@ -314,20 +375,7 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
 
   @override
   void clearDirections() {
-    for (var polyline in _polylines.values) {
-      final start = polyline?.points?.firstOrNull?.toGeoCoord();
-      if (start != null) {
-        removeMarker(start);
-        _directionMarkerCoords.remove(start);
-      }
-      final end = polyline?.points?.lastOrNull?.toGeoCoord();
-      if (end != null) {
-        removeMarker(end);
-        _directionMarkerCoords.remove(end);
-      }
-      polyline = null;
-    }
-    _polylines.clear();
+    _setState(() => _polylines.clear());    
   }
 
   @override

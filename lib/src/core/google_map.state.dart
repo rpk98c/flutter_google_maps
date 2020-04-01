@@ -49,6 +49,7 @@ class GoogleMapState extends GoogleMapStateBase {
     String infoSnippet,
     VoidCallback onTap,
     VoidCallback onInfoWindowTap,
+    int height,
   }) =>
       throw UnimplementedError();
 

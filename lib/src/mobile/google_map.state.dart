@@ -85,10 +85,11 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
       (val) {
         ImageStreamCompleter load = image.load(
             val,
-            (Uint8List bytes, {int cacheWidth, int cacheHeight}) =>
+            (Uint8List bytes,
+                    {bool allowUpscaling, int cacheWidth, int cacheHeight}) =>
                 instantiateImageCodec(
                   bytes,
-                  targetHeight: height,           
+                  targetHeight: height,
                 ));
         load.addListener(
           ImageStreamListener(
@@ -375,7 +376,7 @@ class GoogleMapState extends gmap.GoogleMapStateBase {
 
   @override
   void clearDirections() {
-    _setState(() => _polylines.clear());    
+    _setState(() => _polylines.clear());
   }
 
   @override
